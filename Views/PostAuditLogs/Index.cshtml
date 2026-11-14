@@ -1,0 +1,121 @@
+@{
+    ViewData["Title"] = "Post Audit Log";
+}
+
+<link rel="stylesheet" href="https://cdn.datatables.net/2.1.8/css/dataTables.bootstrap5.min.css" />
+
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <h1>Post Audit Log</h1>
+    <a asp-controller="Home" asp-action="Index" class="btn btn-outline-secondary">Back to posts</a>
+</div>
+
+<table id="auditLogsTable" class="table table-striped table-hover w-100">
+    <thead>
+        <tr>
+            <th>PostId</th>
+            <th>Post.Title</th>
+            <th>Action</th>
+            <th>PerformedBy</th>
+            <th>Datetime</th>
+            <th>Actions</th>
+        </tr>
+    </thead>
+</table>
+
+<div class="modal fade" id="auditDetailsModal" tabindex="-1" aria-labelledby="auditDetailsModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-lg modal-dialog-scrollable"><div class="modal-content">
+        <div class="modal-header">
+            <h5 class="modal-title" id="auditDetailsModalLabel">Post audit details</h5>
+            <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+        </div>
+        <div class="modal-body">
+            <h5>Audit log</h5>
+            <dl class="row">
+                <dt class="col-sm-3">Post ID</dt><dd class="col-sm-9" id="auditPostId"></dd>
+                <dt class="col-sm-3">Action</dt><dd class="col-sm-9" id="auditAction"></dd>
+                <dt class="col-sm-3">Performed by</dt><dd class="col-sm-9" id="auditPerformedBy"></dd>
+                <dt class="col-sm-3">Datetime</dt><dd class="col-sm-9" id="auditTimestamp"></dd>
+                <dt class="col-sm-3">Details</dt><dd class="col-sm-9" id="auditDescription"></dd>
+                <dt class="col-sm-3">IP address</dt><dd class="col-sm-9" id="auditIpAddress"></dd>
+            </dl>
+            <hr />
+            <h5>Post</h5>
+            <dl class="row">
+                <dt class="col-sm-3">Title</dt><dd class="col-sm-9" id="auditPostTitle"></dd>
+                <dt class="col-sm-3">Body</dt><dd class="col-sm-9" id="auditPostBody" style="white-space: pre-wrap"></dd>
+                <dt class="col-sm-3">Created</dt><dd class="col-sm-9" id="auditPostCreated"></dd>
+                <dt class="col-sm-3">Hidden</dt><dd class="col-sm-9" id="auditPostHidden"></dd>
+            </dl>
+        </div>
+    </div></div>
+</div>
+
+@section Scripts {
+    <script src="https://cdn.datatables.net/2.1.8/js/dataTables.min.js"></script>
+    <script src="https://cdn.datatables.net/2.1.8/js/dataTables.bootstrap5.min.js"></script>
+    <script>
+        $(function () {
+            const detailsModal = new bootstrap.Modal('#auditDetailsModal');
+            const table = $('#auditLogsTable').DataTable({
+                processing: true,
+                serverSide: true,
+                ajax: '@Url.Content("~/api/post-audit-logs/datatable")',
+                order: [[4, 'desc']],
+                columns: [
+                    {
+                        data: 'postId',
+                        render: function (data) {
+                            var unescapedText = $('<div>').html(data).text();
+                            return $('<div>').text(unescapedText).html();
+                        }
+                    },
+                    {
+                        data: 'postTitle',
+                        render: function (data) {
+                            var unescapedText = $('<div>').html(data).text();
+                            return $('<div>').text(unescapedText).html();
+                        }
+                    },
+                    {
+                        data: 'action',
+                        render: function (data) {
+                            var unescapedText = $('<div>').html(data).text();
+                            return $('<div>').text(unescapedText).html();
+                        }
+                    },
+                    {
+                        data: 'performedBy',
+                        render: function (data) {
+                            var unescapedText = $('<div>').html(data).text();
+                            return $('<div>').text(unescapedText).html();
+                        }
+                    },
+                    { data: 'timestamp', render: function (data) { return new Date(data).toLocaleString(); } },
+                    { data: 'id', orderable: false, searchable: false, render: function (id) {
+                        return '<button type="button" class="btn btn-sm btn-outline-primary js-audit-view" data-id="' + id + '">View</button>';
+                    }}
+                ]
+            });
+
+            $('#auditLogsTable').on('click', '.js-audit-view', function () {
+                $.get('@Url.Content("~/api/post-audit-logs")/' + $(this).data('id'))
+                    .done(function (result) {
+                        const audit = result.auditLog;
+                        const post = result.post;
+                        $('#auditPostId').text(audit.postId);
+                        $('#auditAction').text(audit.action);
+                        $('#auditPerformedBy').text(audit.performedBy);
+                        $('#auditTimestamp').text(new Date(audit.timestamp).toLocaleString());
+                        $('#auditDescription').text(audit.details || '');
+                        $('#auditIpAddress').text(audit.ipAddress || '');
+                        $('#auditPostTitle').text(post.title);
+                        $('#auditPostBody').text(post.body);
+                        $('#auditPostCreated').text(new Date(post.createdAt).toLocaleString());
+                        $('#auditPostHidden').text(post.adminHideDatetime ? new Date(post.adminHideDatetime).toLocaleString() : 'Not hidden');
+                        detailsModal.show();
+                    })
+                    .fail(function () { alert('The audit log could not be loaded.'); });
+            });
+        });
+    </script>
+}
