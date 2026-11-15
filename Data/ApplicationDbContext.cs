@@ -17,6 +17,8 @@ public class ApplicationDbContext(DbContextOptions<ApplicationDbContext> options
             entity.HasKey(post => post.Id);
             entity.Property(post => post.Title).HasColumnType("nvarchar(max)").IsRequired();
             entity.Property(post => post.Body).HasColumnType("nvarchar(max)").IsRequired();
+            entity.Property(post => post.BadgeEmoji).HasColumnType("nvarchar(32)").HasMaxLength(32).IsRequired(false);
+            entity.Property(post => post.Theme).HasColumnType("varchar(50)").HasMaxLength(50).IsRequired();
             entity.Property(post => post.AdminHideDatetime).IsRequired(false);
             entity.Property(post => post.CreatedAt).HasDefaultValueSql("GETUTCDATE()");
         });

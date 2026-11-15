@@ -38,6 +38,8 @@
         </div>
         <div class="modal-body">
             <h4 id="detailTitle"></h4>
+            <div class="mb-2" id="detailBadgeEmoji"></div>
+            <div class="text-muted mb-2" id="detailTheme"></div>
             <div class="text-muted" id="detailCreatedAt"></div>
             <div class="text-muted mb-3 d-none" id="detailHiddenAt"></div>
             <p id="detailBody" class="mb-0" style="white-space: pre-wrap"></p>
@@ -104,7 +106,8 @@
                         if (isAdmin) {
                             const action = row.adminHideDatetime ? 'restore' : 'hide';
                             const label = row.adminHideDatetime ? 'Restore' : 'Hide';
-                            buttons += ' <button type="button" class="btn btn-sm btn-outline-danger js-visibility" data-id="' + row.id + '" data-action="' + action + '">' + label + '</button>';
+                            const color = row.adminHideDatetime ? 'btn-outline-success' : 'btn-outline-danger';
+                            buttons += ' <button type="button" class="btn btn-sm ' + color + ' js-visibility" data-id="' + row.id + '" data-action="' + action + '">' + label + '</button>';
                         }
                         return buttons;
                     }}
@@ -174,6 +177,8 @@
                 $.get('@Url.Content("~/api/posts")/' + id).done(function (post) {
                     $('#detailTitle').text(post.title);
                     $('#detailBody').text(post.body);
+                    $('#detailBadgeEmoji').text(post.badgeEmoji ? 'Badge: ' + post.badgeEmoji : '').toggle(Boolean(post.badgeEmoji));
+                    $('#detailTheme').text('Theme: ' + (post.theme || 'sunny-joy'));
                     $('#detailCreatedAt').text('Created: ' + new Date(post.createdAt).toLocaleString());
                     if (post.adminHideDatetime) {
                         $('#detailHiddenAt').text('Hidden: ' + new Date(post.adminHideDatetime).toLocaleString()).removeClass('d-none');

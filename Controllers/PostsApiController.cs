@@ -1,5 +1,6 @@
 using StrayThoughts_BE.Data;
 using StrayThoughts_BE.Models;
+using StrayThoughts_BE.Utilities;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
@@ -76,6 +77,8 @@ public class PostsApiController(ApplicationDbContext db) : ControllerBase
             post.Id,
             post.Title,
             post.Body,
+            post.BadgeEmoji,
+            post.Theme,
             post.CreatedAt,
             post.AdminHideDatetime
         });
@@ -135,15 +138,27 @@ public class PostsApiController(ApplicationDbContext db) : ControllerBase
             return BadRequest(ModelState);
         }
 
+        if (!EmojiValidator.IsValid(dto.BadgeEmoji))
+        {
+            ModelState.AddModelError(nameof(dto.BadgeEmoji),
+                $"BadgeEmoji must be empty or contain only 1 emoji");
+            return BadRequest(ModelState);
+        }
+
         // Sanitize inputs by HTML encoding plain text fields
         var sanitizedTitle = WebUtility.HtmlEncode(dto.Title.Trim());
         var sanitizedBody = WebUtility.HtmlEncode(dto.Body.Trim());
+        var theme = !string.IsNullOrWhiteSpace(dto.Theme) && PostThemes.Allowed.Contains(dto.Theme)
+            ? dto.Theme
+            : PostThemes.Default;
 
         var post = new Post
         {
             Id = Guid.NewGuid(),
             Title = sanitizedTitle,
             Body = sanitizedBody,
+            BadgeEmoji = dto.BadgeEmoji,
+            Theme = theme,
             CreatedAt = DateTime.UtcNow,
             AdminHideDatetime = null
         };
@@ -160,6 +175,8 @@ public class PostsApiController(ApplicationDbContext db) : ControllerBase
                 post.Id,
                 post.Title,
                 post.Body,
+                post.BadgeEmoji,
+                post.Theme,
                 post.CreatedAt,
                 post.AdminHideDatetime
             }
@@ -189,6 +206,10 @@ public sealed class CreatePostDto
     [Required(ErrorMessage = "Body is required.")]
     [StringLength(1000, ErrorMessage = "Body cannot exceed 1000 characters.")]
     public string Body { get; set; } = string.Empty;
+
+    public string? BadgeEmoji { get; set; }
+
+    public string Theme { get; set; } = string.Empty;
 }
 public sealed class DataTableRequest
 {
