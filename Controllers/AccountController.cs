@@ -3,7 +3,7 @@ using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
-namespace ImpressionBoard_BE.Controllers;
+namespace StrayThoughts_BE.Controllers;
 
 public class AccountController(IConfiguration configuration) : Controller
 {

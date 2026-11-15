@@ -1,4 +1,4 @@
-namespace ImpressionBoard_BE.Models
+namespace StrayThoughts_BE.Models
 {
     public class ErrorViewModel
     {

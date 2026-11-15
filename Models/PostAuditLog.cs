@@ -1,6 +1,6 @@
 using System.ComponentModel.DataAnnotations;
 
-namespace ImpressionBoard_BE.Models;
+namespace StrayThoughts_BE.Models;
 
 public class PostAuditLog
 {

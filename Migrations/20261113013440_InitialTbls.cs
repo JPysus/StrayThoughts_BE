@@ -3,7 +3,7 @@ using Microsoft.EntityFrameworkCore.Migrations;
 
 #nullable disable
 
-namespace ImpressionBoard_BE.Migrations
+namespace StrayThoughts_BE.Migrations
 {
     /// <inheritdoc />
     public partial class InitialTbls : Migration

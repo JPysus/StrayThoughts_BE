@@ -1,4 +1,4 @@
-using ImpressionBoard_BE.Data;
+using StrayThoughts_BE.Data;
 using Microsoft.EntityFrameworkCore;
 
 var builder = WebApplication.CreateBuilder(args);

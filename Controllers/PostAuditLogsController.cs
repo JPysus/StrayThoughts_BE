@@ -1,9 +1,9 @@
-using ImpressionBoard_BE.Data;
+using StrayThoughts_BE.Data;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 
-namespace ImpressionBoard_BE.Controllers;
+namespace StrayThoughts_BE.Controllers;
 
 [Authorize(Roles = "Admin,Public")]
 [ApiController]

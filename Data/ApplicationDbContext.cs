@@ -1,7 +1,7 @@
-using ImpressionBoard_BE.Models;
+using StrayThoughts_BE.Models;
 using Microsoft.EntityFrameworkCore;
 
-namespace ImpressionBoard_BE.Data;
+namespace StrayThoughts_BE.Data;
 
 public class ApplicationDbContext(DbContextOptions<ApplicationDbContext> options) : DbContext(options)
 {

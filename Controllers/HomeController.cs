@@ -1,9 +1,9 @@
-using ImpressionBoard_BE.Models;
+using StrayThoughts_BE.Models;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using System.Diagnostics;
 
-namespace ImpressionBoard_BE.Controllers
+namespace StrayThoughts_BE.Controllers
 {
     public class HomeController : Controller
     {

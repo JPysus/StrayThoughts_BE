@@ -1,7 +1,7 @@
 using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
 
-namespace ImpressionBoard_BE.Models;
+namespace StrayThoughts_BE.Models;
 
 public class Post
 {
