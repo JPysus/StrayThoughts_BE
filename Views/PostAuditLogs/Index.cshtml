@@ -43,6 +43,8 @@
             <dl class="row">
                 <dt class="col-sm-3">Title</dt><dd class="col-sm-9" id="auditPostTitle"></dd>
                 <dt class="col-sm-3">Body</dt><dd class="col-sm-9" id="auditPostBody" style="white-space: pre-wrap"></dd>
+                <dt class="col-sm-3">Badge Emoji</dt><dd class="col-sm-9" id="auditPostBadgeEmoji"></dd>
+                <dt class="col-sm-3">Theme</dt><dd class="col-sm-9" id="auditPostTheme"></dd>
                 <dt class="col-sm-3">Created</dt><dd class="col-sm-9" id="auditPostCreated"></dd>
                 <dt class="col-sm-3">Hidden</dt><dd class="col-sm-9" id="auditPostHidden"></dd>
             </dl>
@@ -110,6 +112,8 @@
                         $('#auditIpAddress').text(audit.ipAddress || '');
                         $('#auditPostTitle').text(post.title);
                         $('#auditPostBody').text(post.body);
+                        $('#auditPostBadgeEmoji').text(post.badgeEmoji);
+                        $('#auditPostTheme').text(post.theme);
                         $('#auditPostCreated').text(new Date(post.createdAt).toLocaleString());
                         $('#auditPostHidden').text(post.adminHideDatetime ? new Date(post.adminHideDatetime).toLocaleString() : 'Not hidden');
                         detailsModal.show();

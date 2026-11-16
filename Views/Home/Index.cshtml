@@ -174,9 +174,13 @@
             }
 
             function loadDetails(id) {
+                const decode = s => $('<textarea>').html(s ?? '').text();
+
                 $.get('@Url.Content("~/api/posts")/' + id).done(function (post) {
-                    $('#detailTitle').text(post.title);
-                    $('#detailBody').text(post.body);
+                    // $('#detailTitle').text(post.title);
+                    // $('#detailBody').text(post.body);
+                    $('#detailTitle').text(decode(post.title));
+                    $('#detailBody').text(decode(post.body));
                     $('#detailBadgeEmoji').text(post.badgeEmoji ? 'Badge: ' + post.badgeEmoji : '').toggle(Boolean(post.badgeEmoji));
                     $('#detailTheme').text('Theme: ' + (post.theme || 'sunny-joy'));
                     $('#detailCreatedAt').text('Created: ' + new Date(post.createdAt).toLocaleString());

@@ -116,7 +116,9 @@ public class PostAuditLogsController(ApplicationDbContext db) : Controller
                     post.Title,
                     post.Body,
                     post.CreatedAt,
-                    post.AdminHideDatetime
+                    post.AdminHideDatetime,
+                    post.BadgeEmoji,
+                    post.Theme
                 }
             })
             .FirstOrDefaultAsync();
