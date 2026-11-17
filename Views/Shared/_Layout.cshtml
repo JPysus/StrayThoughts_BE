@@ -39,6 +39,7 @@
                             </li>
                         }
                     </ul>
+                    <small id="projectClock" class="text-muted ms-auto" aria-label="Current project time"></small>
                 </div>
             </div>
         </nav>
@@ -57,6 +58,27 @@
     <script src="~/lib/jquery/dist/jquery.min.js"></script>
     <script src="~/lib/bootstrap/dist/js/bootstrap.bundle.min.js"></script>
     <script src="~/js/site.js" asp-append-version="true"></script>
+    <script>
+        (function () {
+            const projectClock = document.getElementById('projectClock');
+            const serverTimestamp = new Date('@StrayThoughts_BE.Utilities.ProjectClock.Now.ToString("yyyy-MM-ddTHH:mm:ss.fff")+08:00');
+            const clientStartTimestamp = Date.now();
+            const gmtPlusEight = new Intl.DateTimeFormat('en-US', {
+                timeZone: 'Asia/Singapore',
+                dateStyle: 'medium',
+                timeStyle: 'medium'
+            });
+
+            function updateProjectClock() {
+                const elapsedMilliseconds = Date.now() - clientStartTimestamp;
+                const currentProjectTime = new Date(serverTimestamp.getTime() + elapsedMilliseconds);
+                projectClock.textContent = 'GMT+8: ' + gmtPlusEight.format(currentProjectTime);
+            }
+
+            updateProjectClock();
+            setInterval(updateProjectClock, 1000);
+        })();
+    </script>
     @await RenderSectionAsync("Scripts", required: false)
 </body>
 </html>

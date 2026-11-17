@@ -5,7 +5,9 @@ using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using System.ComponentModel.DataAnnotations;
+using System.Globalization;
 using System.Net;
+using System.Text;
 
 namespace StrayThoughts_BE.Controllers;
 
@@ -62,16 +64,138 @@ public class PostsApiController(ApplicationDbContext db) : ControllerBase
         return Ok(new { draw = request.Draw, recordsTotal, recordsFiltered, data });
     }
 
+    [AllowAnonymous]
+    [HttpGet("public/feed")]
+    public async Task<IActionResult> PublicFeed(
+        [FromQuery] string? cursor = null,
+        [FromQuery] string? from = null,
+        [FromQuery] string? to = null,
+        [FromQuery] int pageSize = 20)
+    {
+        if (!TryDecodeCursor(cursor, out var cursorCreatedAt, out var cursorId))
+        {
+            return BadRequest(new { error = "The cursor is invalid." });
+        }
+
+        DateTime? fromDate = null;
+        DateTime? toDateExclusive = null;
+        if (!string.IsNullOrWhiteSpace(from))
+        {
+            if (!DateOnly.TryParse(from, CultureInfo.InvariantCulture, DateTimeStyles.None, out var fromLocalDate))
+            {
+                return BadRequest(new { error = "The from date must be a valid date." });
+            }
+
+            fromDate = fromLocalDate.ToDateTime(TimeOnly.MinValue);
+        }
+
+        if (!string.IsNullOrWhiteSpace(to))
+        {
+            if (!DateOnly.TryParse(to, CultureInfo.InvariantCulture, DateTimeStyles.None, out var toLocalDate))
+            {
+                return BadRequest(new { error = "The to date must be a valid date." });
+            }
+
+            toDateExclusive = toLocalDate.ToDateTime(TimeOnly.MinValue).AddDays(1);
+        }
+
+        if (fromDate.HasValue && toDateExclusive.HasValue && fromDate >= toDateExclusive)
+        {
+            return BadRequest(new { error = "The from date must be before or equal to the to date." });
+        }
+
+        pageSize = pageSize is > 0 and <= 100 ? pageSize : 20;
+
+        var query = db.Posts
+            .AsNoTracking()
+            .Where(post => post.AdminHideDatetime == null);
+
+        if (fromDate.HasValue)
+        {
+            query = query.Where(post => post.CreatedAt >= fromDate.Value);
+        }
+
+        if (toDateExclusive.HasValue)
+        {
+            query = query.Where(post => post.CreatedAt < toDateExclusive.Value);
+        }
+
+        if (!string.IsNullOrWhiteSpace(cursor))
+        {
+            query = query.Where(post => post.CreatedAt < cursorCreatedAt ||
+                post.CreatedAt == cursorCreatedAt && post.Id.CompareTo(cursorId) < 0);
+        }
+
+        var posts = await query
+            .OrderByDescending(post => post.CreatedAt)
+            .ThenByDescending(post => post.Id)
+            .Take(pageSize + 1)
+            .Select(post => new
+            {
+                post.Id,
+                post.Title,
+                post.Body,
+                post.BadgeEmoji,
+                post.Theme,
+                post.CreatedAt,
+                post.AdminHideDatetime
+            })
+            .ToListAsync();
+
+        var hasMore = posts.Count > pageSize;
+        var data = posts.Take(pageSize).ToList();
+        var nextCursor = hasMore
+            ? EncodeCursor(data[^1].CreatedAt, data[^1].Id)
+            : null;
+
+        return Ok(new
+        {
+            data,
+            hasMore,
+            nextCursor
+        });
+    }
+
+    private static string EncodeCursor(DateTime createdAt, Guid id)
+    {
+        var value = $"{createdAt.Ticks}:{id:D}";
+        return Convert.ToBase64String(Encoding.UTF8.GetBytes(value))
+            .TrimEnd('=').Replace('+', '-').Replace('/', '_');
+    }
+
+    private static bool TryDecodeCursor(string? cursor, out DateTime createdAt, out Guid id)
+    {
+        createdAt = default;
+        id = default;
+        if (string.IsNullOrWhiteSpace(cursor))
+        {
+            return true;
+        }
+
+        try
+        {
+            var base64 = cursor.Replace('-', '+').Replace('_', '/');
+            base64 = base64.PadRight(base64.Length + (4 - base64.Length % 4) % 4, '=');
+            var value = Encoding.UTF8.GetString(Convert.FromBase64String(base64));
+            var parts = value.Split(':', 2);
+            return parts.Length == 2 &&
+                long.TryParse(parts[0], NumberStyles.Integer, CultureInfo.InvariantCulture, out var ticks) &&
+                Guid.TryParse(parts[1], out id) &&
+                ticks >= DateTime.MinValue.Ticks && ticks <= DateTime.MaxValue.Ticks &&
+                (createdAt = new DateTime(ticks, DateTimeKind.Unspecified)) != default;
+        }
+        catch (FormatException)
+        {
+            return false;
+        }
+    }
+
     [HttpGet("{id:guid}")]
     public async Task<IActionResult> Details(Guid id)
     {
-        var post = await db.Posts.AsNoTracking().FirstOrDefaultAsync(item => item.Id == id);
-        if (post is null)
-
-        {
-            return NotFound();
-        }
-
+        var query = db.Posts.AsNoTracking().Where(p => p.Id == id);
+        var post = await query.FirstOrDefaultAsync();
+        if (post is null) return NotFound();
         return Ok(new
         {
             post.Id,
@@ -82,6 +206,24 @@ public class PostsApiController(ApplicationDbContext db) : ControllerBase
             post.CreatedAt,
             post.AdminHideDatetime
         });
+    }
+    [AllowAnonymous]
+    [HttpGet("public/{id:guid}")]
+    public async Task<IActionResult> PublicDetails(Guid id)
+    {
+        var query = db.Posts.AsNoTracking().Where(p => p.Id == id).Where(p => p.AdminHideDatetime == null);
+        var post = await query.FirstOrDefaultAsync();
+        if (post is null) return NotFound();
+        return Ok(new
+        {
+            post.Id,
+            post.Title,
+            post.Body,
+            post.BadgeEmoji,
+            post.Theme,
+            post.CreatedAt
+        });
+        
     }
 
     [Authorize(Roles = "Admin")]
@@ -94,7 +236,7 @@ public class PostsApiController(ApplicationDbContext db) : ControllerBase
             return NotFound();
         }
 
-        post.AdminHideDatetime = DateTime.UtcNow;
+        post.AdminHideDatetime = ProjectClock.Now;
         db.PostAuditLogs.Add(CreateAuditLog(post.Id, "Hide", "Post hidden by admin."));
         await db.SaveChangesAsync();
         return NoContent();
@@ -159,7 +301,7 @@ public class PostsApiController(ApplicationDbContext db) : ControllerBase
             Body = sanitizedBody,
             BadgeEmoji = dto.BadgeEmoji,
             Theme = theme,
-            CreatedAt = DateTime.UtcNow,
+            CreatedAt = ProjectClock.Now,
             AdminHideDatetime = null
         };
 
@@ -190,7 +332,7 @@ public class PostsApiController(ApplicationDbContext db) : ControllerBase
             PostId = postId,
             Action = action,
             PerformedBy = User.Identity?.Name ?? "Anonymous", // to check User.Identity, di ngani guamgamit ng identity
-            Timestamp = DateTime.UtcNow,
+            Timestamp = ProjectClock.Now,
             Details = details,
             IpAddress = HttpContext.Connection.RemoteIpAddress?.ToString()
         };

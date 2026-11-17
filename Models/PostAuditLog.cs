@@ -1,4 +1,5 @@
 using System.ComponentModel.DataAnnotations;
+using StrayThoughts_BE.Utilities;
 
 namespace StrayThoughts_BE.Models;
 
@@ -18,7 +19,7 @@ public class PostAuditLog
     [MaxLength(100)]
     public string PerformedBy { get; set; } = "Anonymous"; // Admin username or "Anonymous"
 
-    public DateTime Timestamp { get; set; } = DateTime.UtcNow;
+    public DateTime Timestamp { get; set; } = ProjectClock.Now;
 
     public string? Details { get; set; } // Optional descriptive text (e.g., "Post hidden by admin")
 

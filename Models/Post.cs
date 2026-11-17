@@ -1,5 +1,6 @@
 using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
+using StrayThoughts_BE.Utilities;
 
 namespace StrayThoughts_BE.Models;
 
@@ -28,5 +29,5 @@ public class Post
 
     public DateTime? AdminHideDatetime { get; set; }
 
-    public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
+    public DateTime CreatedAt { get; set; } = ProjectClock.Now;
 }
