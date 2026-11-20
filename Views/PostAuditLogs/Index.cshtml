@@ -2,7 +2,7 @@
     ViewData["Title"] = "Post Audit Log";
 }
 
-<link rel="stylesheet" href="https://cdn.datatables.net/2.1.8/css/dataTables.bootstrap5.min.css" />
+<link rel="stylesheet" href="~/lib/datatables.net-bs5/dataTables.bootstrap5.min.css" />
 
 <div class="d-flex justify-content-between align-items-center mb-4">
     <h1>Post Audit Log</h1>
@@ -53,8 +53,8 @@
 </div>
 
 @section Scripts {
-    <script src="https://cdn.datatables.net/2.1.8/js/dataTables.min.js"></script>
-    <script src="https://cdn.datatables.net/2.1.8/js/dataTables.bootstrap5.min.js"></script>
+    <script src="~/lib/datatables.net/dataTables.min.js"></script>
+    <script src="~/lib/datatables.net-bs5/dataTables.bootstrap5.min.js"></script>
     <script>
         $(function () {
             const detailsModal = new bootstrap.Modal('#auditDetailsModal');
@@ -94,7 +94,7 @@
                     },
                     { data: 'timestamp', render: function (data) { return new Date(data).toLocaleString(); } },
                     { data: 'id', orderable: false, searchable: false, render: function (id) {
-                        return '<button type="button" class="btn btn-sm btn-outline-primary js-audit-view" data-id="' + id + '">View</button>';
+                        return '<button type="button" class="btn btn-sm btn-outline-primary js-audit-view" data-id="' + id + '" title="View" aria-label="View"><i class="bi bi-eye" aria-hidden="true"></i><span class="visually-hidden">View</span></button>';
                     }}
                 ]
             });
@@ -113,7 +113,7 @@
                         $('#auditPostTitle').text(post.title);
                         $('#auditPostBody').text(post.body);
                         $('#auditPostBadgeEmoji').text(post.badgeEmoji);
-                        $('#auditPostTheme').text(post.theme);
+                        $('#auditPostTheme').text(post.themeKey || '');
                         $('#auditPostCreated').text(new Date(post.createdAt).toLocaleString());
                         $('#auditPostHidden').text(post.adminHideDatetime ? new Date(post.adminHideDatetime).toLocaleString() : 'Not hidden');
                         detailsModal.show();

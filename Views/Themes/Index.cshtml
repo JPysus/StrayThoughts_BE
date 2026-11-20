@@ -1,0 +1,270 @@
+@{
+    ViewData["Title"] = "Themes";
+    var isAdmin = User.IsInRole("Admin");
+}
+
+<link rel="stylesheet" href="~/lib/datatables.net-bs5/dataTables.bootstrap5.min.css" />
+
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <h1>Theme Management</h1>
+    <div>
+        <a asp-controller="Home" asp-action="Index" class="btn btn-outline-secondary">Back to posts</a>
+        @if (isAdmin)
+        {
+            <button type="button" class="btn btn-success" id="createThemeButton" title="Create theme" aria-label="Create theme"><i class="bi bi-plus-lg" aria-hidden="true"></i> Create<span class="visually-hidden">Create theme</span></button>
+        }
+    </div>
+</div>
+
+<div class="row align-items-end mb-3">
+    <div class="col-md-4">
+        <label for="themeStatusFilter" class="form-label">Show</label>
+        <select id="themeStatusFilter" class="form-select">
+            <option value="active">Active themes</option>
+            <option value="deleted">Inactive themes</option>
+            <option value="all">All themes</option>
+        </select>
+    </div>
+</div>
+
+<table id="themesTable" class="table table-striped table-hover w-100">
+    <thead>
+        <tr><th>Key</th><th>Display Name</th><th>Actions</th></tr>
+    </thead>
+</table>
+
+<div class="modal fade" id="themeEditorModal" tabindex="-1" aria-labelledby="themeEditorModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-xl modal-dialog-scrollable">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="themeEditorModalLabel">Create theme</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <div id="themeFormErrors" class="alert alert-danger d-none"></div>
+                <form id="themeForm">
+                    <input type="hidden" id="themeId" />
+                    <div class="row g-3 mb-4">
+                        <div class="col-md-6">
+                            <label for="themeKey" class="form-label">Key</label>
+                            <input id="themeKey" class="form-control" maxlength="100" required />
+                        </div>
+                        <div class="col-md-6">
+                            <label for="themeDisplayName" class="form-label">Display name</label>
+                            <input id="themeDisplayName" class="form-control" maxlength="100" required />
+                        </div>
+                    </div>
+
+                    <div class="row g-4">
+                        <div class="col-12 col-lg-6">
+                            <h5>Light mode</h5>
+                            <div class="row g-3 mb-3">
+                                <div class="col-sm-4"><label for="lightBg" class="form-label">Background</label><input id="lightBg" type="color" class="form-control form-control-color w-100" value="#fffbeb" /></div>
+                                <div class="col-sm-4"><label for="lightBorder" class="form-label">Border</label><input id="lightBorder" type="color" class="form-control form-control-color w-100" value="#fde68a" /></div>
+                                <div class="col-sm-4"><label for="lightText" class="form-label">Text</label><input id="lightText" type="color" class="form-control form-control-color w-100" value="#78350f" /></div>
+                            </div>
+                            <div id="lightPreview" class="border border-2 rounded p-4" role="img" aria-label="Light theme preview">
+                                <h4 class="theme-preview-title">Lorem Ipsum</h4>
+                                <p class="theme-preview-body mb-0">Lorem ipsum dolor sit amet, consectetur adipiscing elit. Preview text shows how this theme looks.</p>
+                            </div>
+                        </div>
+                        <div class="col-12 col-lg-6">
+                            <h5>Dark mode</h5>
+                            <div class="row g-3 mb-3">
+                                <div class="col-sm-4"><label for="darkBg" class="form-label">Background</label><input id="darkBg" type="color" class="form-control form-control-color w-100" value="#0f172a" /></div>
+                                <div class="col-sm-4"><label for="darkBorder" class="form-label">Border</label><input id="darkBorder" type="color" class="form-control form-control-color w-100" value="#1e293b" /></div>
+                                <div class="col-sm-4"><label for="darkText" class="form-label">Text</label><input id="darkText" type="color" class="form-control form-control-color w-100" value="#fef3c7" /></div>
+                            </div>
+                            <div id="darkPreview" class="border border-2  rounded p-4" role="img" aria-label="Dark theme preview">
+                                <h4 class="theme-preview-title">Lorem Ipsum</h4>
+                                <p class="theme-preview-body mb-0">Lorem ipsum dolor sit amet, consectetur adipiscing elit. Preview text shows how this theme looks.</p>
+                            </div>
+                        </div>
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer" id="themeModalFooter">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                @if (isAdmin)
+                {
+                    <button type="button" class="btn btn-primary" id="saveThemeButton">Save</button>
+                }
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <script src="~/lib/datatables.net/dataTables.min.js"></script>
+    <script src="~/lib/datatables.net-bs5/dataTables.bootstrap5.min.js"></script>
+    <script>
+        $(function () {
+            const isAdmin = @(isAdmin.ToString().ToLowerInvariant());
+            const themeModal = new bootstrap.Modal('#themeEditorModal');
+            let editingId = null;
+
+            function safeText(value) {
+                return $('<div>').text(value ?? '').html();
+            }
+
+            const table = $('#themesTable').DataTable({
+                processing: true,
+                serverSide: true,
+                ajax: {
+                    url: '@Url.Content("~/api/themes/datatable")',
+                    data: function (request) { request.status = $('#themeStatusFilter').val(); }
+                },
+                order: [[0, 'asc']],
+                columns: [
+                    { data: 'key', render: safeText },
+                    { data: 'displayName', render: safeText },
+                    {
+                        data: null,
+                        orderable: false,
+                        searchable: false,
+                        render: function (data, type, row) {
+                            if (!isAdmin) {
+                                const disabled = ' disabled aria-disabled="true"';
+                                const faded = ' opacity-50';
+                                let buttons = '<button type="button" class="btn btn-sm btn-outline-primary js-view" data-id="' + row.id + '" title="View" aria-label="View"><i class="bi bi-eye" aria-hidden="true"></i><span class="visually-hidden">View</span></button>';
+                                buttons += ' <button type="button" class="btn btn-sm btn-outline-secondary' + faded + '" title="Update" aria-label="Update"' + disabled + '><i class="bi bi-pencil" aria-hidden="true"></i><span class="visually-hidden">Update</span></button>';
+                                if (row.deletedAt) {
+                                    buttons += ' <button type="button" class="btn btn-sm btn-outline-secondary' + faded + '" title="Restore" aria-label="Restore"' + disabled + '><i class="bi bi-arrow-counterclockwise" aria-hidden="true"></i><span class="visually-hidden">Restore</span></button>';
+                                } else {
+                                    buttons += ' <button type="button" class="btn btn-sm btn-outline-secondary' + faded + '" title="Delete" aria-label="Delete"' + disabled + '><i class="bi bi-trash" aria-hidden="true"></i><span class="visually-hidden">Delete</span></button>';
+                                }
+                                return buttons;
+                            }
+
+                            let buttons = '<button type="button" class="btn btn-sm btn-outline-primary js-edit" data-id="' + row.id + '" title="Update" aria-label="Update"><i class="bi bi-pencil" aria-hidden="true"></i><span class="visually-hidden">Update</span></button>';
+                            if (row.deletedAt) {
+                                buttons += ' <button type="button" class="btn btn-sm btn-outline-success js-restore" data-id="' + row.id + '" title="Restore" aria-label="Restore"><i class="bi bi-arrow-counterclockwise" aria-hidden="true"></i><span class="visually-hidden">Restore</span></button>';
+                            } else {
+                                buttons += ' <button type="button" class="btn btn-sm btn-outline-danger js-delete" data-id="' + row.id + '" title="Delete" aria-label="Delete"><i class="bi bi-trash" aria-hidden="true"></i><span class="visually-hidden">Delete</span></button>';
+                            }
+                            return buttons;
+                        }
+                    }
+                ]
+            });
+
+            $('#themeStatusFilter').on('change', function () { table.ajax.reload(); });
+
+            function setPreview(mode) {
+                // const prefix = mode === 'light' ? 'light' : 'dark';
+                // const preview = $('#' + prefix + 'Preview');
+                // preview.css({
+                //     backgroundColor: $('#' + prefix + 'Bg').val(),
+                //     borderColor: $('#' + prefix + 'Border').val(),
+                //     color: $('#' + prefix + 'Text').val()
+                // });
+                const prefix = mode === 'light' ? 'light' : 'dark';
+                const previewEl = document.getElementById(prefix + 'Preview');
+                const bg = $('#' + prefix + 'Bg').val();
+                const border = $('#' + prefix + 'Border').val();
+                const text = $('#' + prefix + 'Text').val();
+
+                previewEl.style.setProperty('--bs-border-color', border);
+                previewEl.style.setProperty('border-color', border, 'important');
+                previewEl.style.setProperty('background-color', bg, 'important');
+                previewEl.style.setProperty('color', text, 'important');
+            }
+
+            function updatePreviews() { setPreview('light'); setPreview('dark'); }
+            $('#themeForm input[type=color]').on('input change', updatePreviews);
+
+            function clearForm() {
+                editingId = null;
+                $('#themeForm')[0].reset();
+                $('#themeForm input').prop('disabled', false);
+                $('#themeId').val('');
+                $('#themeFormErrors').addClass('d-none').empty();
+                $('#themeEditorModalLabel').text('Create theme');
+                $('#themeModalFooter').removeClass('d-none');
+                updatePreviews();
+            }
+
+            function loadTheme(id, readOnly) {
+                $.get('@Url.Content("~/api/themes")/' + id).done(function (theme) {
+                    editingId = readOnly ? null : id;
+                    $('#themeId').val(theme.id);
+                    $('#themeKey').val(theme.key);
+                    $('#themeDisplayName').val(theme.displayName);
+                    $('#lightBg').val(theme.lightBg);
+                    $('#lightBorder').val(theme.lightBorder);
+                    $('#lightText').val(theme.lightText);
+                    $('#darkBg').val(theme.darkBg);
+                    $('#darkBorder').val(theme.darkBorder);
+                    $('#darkText').val(theme.darkText);
+                    $('#themeForm input').prop('disabled', readOnly);
+                    $('#themeFormErrors').addClass('d-none').empty();
+                    $('#themeEditorModalLabel').text(readOnly ? 'View theme' : 'Update theme');
+                    $('#themeModalFooter').toggleClass('d-none', readOnly);
+                    updatePreviews();
+                    themeModal.show();
+                }).fail(function () { alert('The theme could not be loaded.'); });
+            }
+
+            $('#createThemeButton').on('click', function () {
+                clearForm();
+                themeModal.show();
+            });
+
+            $('#themesTable').on('click', '.js-edit', function () {
+                if (!isAdmin) return;
+                loadTheme($(this).data('id'), false);
+            });
+
+            $('#themesTable').on('click', '.js-view', function () {
+                if (isAdmin) return;
+                loadTheme($(this).data('id'), true);
+            });
+
+            function postAction(id, action) {
+                if (!isAdmin || !confirm('Are you sure you want to ' + action + ' this theme?')) return;
+                $.post('@Url.Content("~/api/themes")/' + id + '/' + action)
+                    .done(function () { table.ajax.reload(null, false); })
+                    .fail(function (xhr) { alert(getErrors(xhr)); });
+            }
+
+            $('#themesTable').on('click', '.js-delete', function () { postAction($(this).data('id'), 'delete'); });
+            $('#themesTable').on('click', '.js-restore', function () { postAction($(this).data('id'), 'restore'); });
+
+            function getErrors(xhr) {
+                const response = xhr.responseJSON || {};
+                const messages = Object.values(response).flatMap(function (value) {
+                    return Array.isArray(value) ? value : [];
+                });
+                return messages.join('\n') || response.error || 'The request could not be completed.';
+            }
+
+            $('#saveThemeButton').on('click', function () {
+                if (!isAdmin) return;
+                const payload = {
+                    key: $('#themeKey').val(),
+                    displayName: $('#themeDisplayName').val(),
+                    lightBg: $('#lightBg').val(),
+                    lightBorder: $('#lightBorder').val(),
+                    lightText: $('#lightText').val(),
+                    darkBg: $('#darkBg').val(),
+                    darkBorder: $('#darkBorder').val(),
+                    darkText: $('#darkText').val()
+                };
+                $.ajax({
+                    url: '@Url.Content("~/api/themes")' + (editingId ? '/' + editingId : ''),
+                    type: editingId ? 'PUT' : 'POST',
+                    contentType: 'application/json',
+                    data: JSON.stringify(payload)
+                }).done(function () {
+                    themeModal.hide();
+                    table.ajax.reload(null, false);
+                }).fail(function (xhr) {
+                    const errors = getErrors(xhr).replace(/\n/g, '<br>');
+                    $('#themeFormErrors').html(errors).removeClass('d-none');
+                });
+            });
+
+            clearForm();
+        });
+    </script>
+}

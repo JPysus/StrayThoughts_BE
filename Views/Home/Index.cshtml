@@ -3,7 +3,7 @@
     var isAdmin = User.IsInRole("Admin");
 }
 
-<link rel="stylesheet" href="https://cdn.datatables.net/2.1.8/css/dataTables.bootstrap5.min.css" />
+<link rel="stylesheet" href="~/lib/datatables.net-bs5/dataTables.bootstrap5.min.css" />
 
 <div class="d-flex justify-content-between align-items-center mb-4">
     <h1>Post Records</h1>
@@ -72,8 +72,8 @@
 }
 
 @section Scripts {
-    <script src="https://cdn.datatables.net/2.1.8/js/dataTables.min.js"></script>
-    <script src="https://cdn.datatables.net/2.1.8/js/dataTables.bootstrap5.min.js"></script>
+    <script src="~/lib/datatables.net/dataTables.min.js"></script>
+    <script src="~/lib/datatables.net-bs5/dataTables.bootstrap5.min.js"></script>
     <script>
         $(function () {
             const isAdmin = @(isAdmin.ToString().ToLowerInvariant());
@@ -102,12 +102,13 @@
                         return data ? new Date(data).toLocaleString() : '';
                     }},
                     { data: null, orderable: false, searchable: false, render: function (data, type, row) {
-                        let buttons = '<button type="button" class="btn btn-sm btn-outline-primary js-view" data-id="' + row.id + '">View</button>';
+                        let buttons = '<button type="button" class="btn btn-sm btn-outline-primary js-view" data-id="' + row.id + '" title="View" aria-label="View"><i class="bi bi-eye" aria-hidden="true"></i><span class="visually-hidden">View</span></button>';
                         if (isAdmin) {
                             const action = row.adminHideDatetime ? 'restore' : 'hide';
                             const label = row.adminHideDatetime ? 'Restore' : 'Hide';
                             const color = row.adminHideDatetime ? 'btn-outline-success' : 'btn-outline-danger';
-                            buttons += ' <button type="button" class="btn btn-sm ' + color + ' js-visibility" data-id="' + row.id + '" data-action="' + action + '">' + label + '</button>';
+                            const icon = row.adminHideDatetime ? 'bi-arrow-counterclockwise' : 'bi-eye-slash';
+                            buttons += ' <button type="button" class="btn btn-sm ' + color + ' js-visibility" data-id="' + row.id + '" data-action="' + action + '" title="' + label + '" aria-label="' + label + '"><i class="bi ' + icon + '" aria-hidden="true"></i><span class="visually-hidden">' + label + '</span></button>';
                         }
                         return buttons;
                     }}
@@ -182,7 +183,7 @@
                     $('#detailTitle').text(decode(post.title));
                     $('#detailBody').text(decode(post.body));
                     $('#detailBadgeEmoji').text(post.badgeEmoji ? 'Badge: ' + post.badgeEmoji : '').toggle(Boolean(post.badgeEmoji));
-                    $('#detailTheme').text('Theme: ' + (post.theme || 'sunny-joy'));
+                    $('#detailTheme').text('Theme: ' + (post.theme?.key || ''));
                     $('#detailCreatedAt').text('Created: ' + new Date(post.createdAt).toLocaleString());
                     if (post.adminHideDatetime) {
                         $('#detailHiddenAt').text('Hidden: ' + new Date(post.adminHideDatetime).toLocaleString()).removeClass('d-none');
