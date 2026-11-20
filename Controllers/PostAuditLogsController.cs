@@ -118,7 +118,9 @@ public class PostAuditLogsController(ApplicationDbContext db) : Controller
                     post.CreatedAt,
                     post.AdminHideDatetime,
                     post.BadgeEmoji,
-                    post.Theme
+                    post.ThemeId,
+                    ThemeKey = db.Themes.Where(theme => theme.Id == post.ThemeId).Select(theme => theme.Key).FirstOrDefault(),
+                    ThemeDisplayName = db.Themes.Where(theme => theme.Id == post.ThemeId).Select(theme => theme.DisplayName).FirstOrDefault()
                 }
             })
             .FirstOrDefaultAsync();

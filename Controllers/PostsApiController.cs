@@ -136,7 +136,18 @@ public class PostsApiController(ApplicationDbContext db) : ControllerBase
                 post.Title,
                 post.Body,
                 post.BadgeEmoji,
-                post.Theme,
+                Theme = new
+                {
+                    post.ThemeId,
+                    post.Theme.Key,
+                    post.Theme.DisplayName,
+                    post.Theme.LightBg,
+                    post.Theme.LightBorder,
+                    post.Theme.LightText,
+                    post.Theme.DarkBg,
+                    post.Theme.DarkBorder,
+                    post.Theme.DarkText
+                },
                 post.CreatedAt,
                 post.AdminHideDatetime
             })
@@ -193,7 +204,7 @@ public class PostsApiController(ApplicationDbContext db) : ControllerBase
     [HttpGet("{id:guid}")]
     public async Task<IActionResult> Details(Guid id)
     {
-        var query = db.Posts.AsNoTracking().Where(p => p.Id == id);
+        var query = db.Posts.AsNoTracking().Include(p => p.Theme).Where(p => p.Id == id);
         var post = await query.FirstOrDefaultAsync();
         if (post is null) return NotFound();
         return Ok(new
@@ -202,7 +213,7 @@ public class PostsApiController(ApplicationDbContext db) : ControllerBase
             post.Title,
             post.Body,
             post.BadgeEmoji,
-            post.Theme,
+            Theme = new { post.ThemeId, post.Theme.Key, post.Theme.DisplayName },
             post.CreatedAt,
             post.AdminHideDatetime
         });
@@ -211,7 +222,7 @@ public class PostsApiController(ApplicationDbContext db) : ControllerBase
     [HttpGet("public/{id:guid}")]
     public async Task<IActionResult> PublicDetails(Guid id)
     {
-        var query = db.Posts.AsNoTracking().Where(p => p.Id == id).Where(p => p.AdminHideDatetime == null);
+        var query = db.Posts.AsNoTracking().Include(p => p.Theme).Where(p => p.Id == id).Where(p => p.AdminHideDatetime == null);
         var post = await query.FirstOrDefaultAsync();
         if (post is null) return NotFound();
         return Ok(new
@@ -220,7 +231,7 @@ public class PostsApiController(ApplicationDbContext db) : ControllerBase
             post.Title,
             post.Body,
             post.BadgeEmoji,
-            post.Theme,
+            Theme = new { post.ThemeId, post.Theme.Key, post.Theme.DisplayName },
             post.CreatedAt
         });
         
@@ -290,9 +301,14 @@ public class PostsApiController(ApplicationDbContext db) : ControllerBase
         // Sanitize inputs by HTML encoding plain text fields
         var sanitizedTitle = WebUtility.HtmlEncode(dto.Title.Trim());
         var sanitizedBody = WebUtility.HtmlEncode(dto.Body.Trim());
-        var theme = !string.IsNullOrWhiteSpace(dto.Theme) && PostThemes.Allowed.Contains(dto.Theme)
-            ? dto.Theme
-            : PostThemes.Default;
+        var themeKey = dto.ThemeKey?.Trim().ToLowerInvariant();
+        var theme = await db.Themes.FirstOrDefaultAsync(item => item.Key == themeKey && item.DeletedAt == null)
+            ?? await db.Themes.FirstOrDefaultAsync(item => item.Key == Theme.DefaultKey && item.DeletedAt == null);
+        if (theme is null)
+        {
+            ModelState.AddModelError(nameof(dto.ThemeKey), "An active default theme is required before creating posts.");
+            return BadRequest(ModelState);
+        }
 
         var post = new Post
         {
@@ -300,7 +316,7 @@ public class PostsApiController(ApplicationDbContext db) : ControllerBase
             Title = sanitizedTitle,
             Body = sanitizedBody,
             BadgeEmoji = dto.BadgeEmoji,
-            Theme = theme,
+            ThemeId = theme.Id,
             CreatedAt = ProjectClock.Now,
             AdminHideDatetime = null
         };
@@ -318,7 +334,7 @@ public class PostsApiController(ApplicationDbContext db) : ControllerBase
                 post.Title,
                 post.Body,
                 post.BadgeEmoji,
-                post.Theme,
+                Theme = new { post.ThemeId, theme.Id, theme.Key, theme.DisplayName },
                 post.CreatedAt,
                 post.AdminHideDatetime
             }
@@ -351,7 +367,7 @@ public sealed class CreatePostDto
 
     public string? BadgeEmoji { get; set; }
 
-    public string Theme { get; set; } = string.Empty;
+    public string? ThemeKey { get; set; }
 }
 public sealed class DataTableRequest
 {

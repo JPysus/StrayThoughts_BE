@@ -18,7 +18,7 @@ public class AccountController(IConfiguration configuration) : Controller
     [AllowAnonymous]
     [HttpPost]
     [ValidateAntiForgeryToken]
-    public async Task<IActionResult> Login(string username, string password, string? returnUrl = null)
+    public async Task<IActionResult> Login(string username, string password, bool rememberMe = false, string? returnUrl = null)
     {
         var configuredUsername = configuration["AdminCredentials:Username"];
         var configuredPassword = configuration["AdminCredentials:Password"];
@@ -26,7 +26,7 @@ public class AccountController(IConfiguration configuration) : Controller
         if (string.Equals(username, configuredUsername, StringComparison.Ordinal) &&
             string.Equals(password, configuredPassword, StringComparison.Ordinal))
         {
-            await SignInAsync(username, "Admin");
+            await SignInAsync(username, "Admin", rememberMe);
             return RedirectToLocal(returnUrl);
         }
 
@@ -40,7 +40,7 @@ public class AccountController(IConfiguration configuration) : Controller
     [ValidateAntiForgeryToken]
     public async Task<IActionResult> PublicViewing()
     {
-        await SignInAsync("Public viewer", "Public");
+        await SignInAsync("Public viewer", "Public", false);
         return RedirectToAction("Index", "Home");
     }
 
@@ -56,7 +56,7 @@ public class AccountController(IConfiguration configuration) : Controller
     [AllowAnonymous]
     public IActionResult AccessDenied() => View();
 
-    private async Task SignInAsync(string name, string role)
+    private async Task SignInAsync(string name, string role, bool isPersistent)
     {
         var claims = new[]
         {
@@ -64,7 +64,10 @@ public class AccountController(IConfiguration configuration) : Controller
             new Claim(ClaimTypes.Role, role)
         };
         var identity = new ClaimsIdentity(claims, "ImpressionBoardCookie");
-        await HttpContext.SignInAsync("ImpressionBoardCookie", new ClaimsPrincipal(identity));
+        await HttpContext.SignInAsync(
+            "ImpressionBoardCookie",
+            new ClaimsPrincipal(identity),
+            new AuthenticationProperties { IsPersistent = isPersistent });
     }
 
     private IActionResult RedirectToLocal(string? returnUrl)
