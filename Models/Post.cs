@@ -23,9 +23,10 @@ public class Post
     public string? BadgeEmoji { get; set; }
 
     [Required]
-    [StringLength(50)]
-    [Column(TypeName = "varchar(50)")]
-    public string Theme { get; set; } = PostThemes.Default;
+    public Guid ThemeId { get; set; }
+
+    [ForeignKey(nameof(ThemeId))]
+    public Theme Theme { get; set; } = null!;
 
     public DateTime? AdminHideDatetime { get; set; }
 
