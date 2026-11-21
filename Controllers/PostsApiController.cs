@@ -1,7 +1,5 @@
-using StrayThoughts_BE.Data;
-using StrayThoughts_BE.Models;
-using StrayThoughts_BE.Utilities;
 using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Cors;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using StrayThoughts_BE.Data;
@@ -67,6 +65,7 @@ public class PostsApiController(ApplicationDbContext db) : ControllerBase
         return Ok(new { draw = request.Draw, recordsTotal, recordsFiltered, data });
     }
 
+    [EnableCors("StrayThoughtsCorsPolicy")]
     [AllowAnonymous]
     [HttpGet("public/feed")]
     public async Task<IActionResult> PublicFeed(
@@ -139,18 +138,6 @@ public class PostsApiController(ApplicationDbContext db) : ControllerBase
                 post.Title,
                 post.Body,
                 post.BadgeEmoji,
-                Theme = new
-                {
-                    post.ThemeId,
-                    post.Theme.Key,
-                    post.Theme.DisplayName,
-                    post.Theme.LightBg,
-                    post.Theme.LightBorder,
-                    post.Theme.LightText,
-                    post.Theme.DarkBg,
-                    post.Theme.DarkBorder,
-                    post.Theme.DarkText
-                },
                 post.CreatedAt,
                 Theme = post.Theme == null ? null : new ThemeSummaryDto(post.Theme),
             })
@@ -221,6 +208,8 @@ public class PostsApiController(ApplicationDbContext db) : ControllerBase
             post.AdminHideDatetime
         });
     }
+
+    [EnableCors("StrayThoughtsCorsPolicy")]
     [AllowAnonymous]
     [HttpGet("public/{id:guid}")]
     public async Task<IActionResult> PublicDetails(Guid id)
@@ -284,7 +273,8 @@ public class PostsApiController(ApplicationDbContext db) : ControllerBase
             _ => query.OrderByDescending(post => post.CreatedAt)
         };
     }
-    
+
+    [EnableCors("StrayThoughtsCorsPolicy")]
     [AllowAnonymous]
     [HttpPost]
     public async Task<IActionResult> Create([FromBody] CreatePostDto dto)

@@ -1,6 +1,5 @@
-using System.ComponentModel.DataAnnotations;
-using System.Text.RegularExpressions;
 using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Cors;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using StrayThoughts_BE.Data;
@@ -20,6 +19,7 @@ public class ThemesController(ApplicationDbContext db) : Controller
     [Route("~/Themes")]
     public IActionResult Index() => View();
 
+    [EnableCors("StrayThoughtsCorsPolicy")]
     [AllowAnonymous]
     [HttpGet("list")]
     public async Task<IActionResult> List()
@@ -44,6 +44,7 @@ public class ThemesController(ApplicationDbContext db) : Controller
 
         return Ok(themes);
     }
+
     [HttpGet("datatable")]
     public async Task<IActionResult> DataTable([FromQuery] string status = "active")
     {
