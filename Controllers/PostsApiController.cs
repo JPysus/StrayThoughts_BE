@@ -4,6 +4,9 @@ using StrayThoughts_BE.Utilities;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
+using StrayThoughts_BE.Data;
+using StrayThoughts_BE.Models;
+using StrayThoughts_BE.Utilities;
 using System.ComponentModel.DataAnnotations;
 using System.Globalization;
 using System.Net;
@@ -149,7 +152,7 @@ public class PostsApiController(ApplicationDbContext db) : ControllerBase
                     post.Theme.DarkText
                 },
                 post.CreatedAt,
-                post.AdminHideDatetime
+                Theme = post.Theme == null ? null : new ThemeSummaryDto(post.Theme),
             })
             .ToListAsync();
 
@@ -231,8 +234,8 @@ public class PostsApiController(ApplicationDbContext db) : ControllerBase
             post.Title,
             post.Body,
             post.BadgeEmoji,
-            Theme = new { post.ThemeId, post.Theme.Key, post.Theme.DisplayName },
-            post.CreatedAt
+            post.CreatedAt,
+            Theme = post.Theme == null ? null : new ThemeSummaryDto(post.Theme),
         });
         
     }
@@ -425,4 +428,18 @@ public sealed class DataTableOrder
 {
     public int Column { get; set; }
     public string? Dir { get; set; }
+}
+
+public record ThemeSummaryDto(
+    string Key, string DisplayName,
+    string LightBg, string LightBorder, string LightText,
+    string DarkBg, string DarkBorder, string DarkText
+)
+{
+    public ThemeSummaryDto(Theme theme) : this(
+        theme.Key,theme.DisplayName,
+        theme.LightBg, theme.LightBorder, theme.LightText,
+        theme.DarkBg, theme.DarkBorder, theme.DarkText
+    )
+    { }
 }
