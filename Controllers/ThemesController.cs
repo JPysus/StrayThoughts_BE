@@ -6,6 +6,8 @@ using Microsoft.EntityFrameworkCore;
 using StrayThoughts_BE.Data;
 using StrayThoughts_BE.Models;
 using StrayThoughts_BE.Utilities;
+using System.ComponentModel.DataAnnotations;
+using System.Text.RegularExpressions;
 
 namespace StrayThoughts_BE.Controllers;
 
@@ -18,6 +20,30 @@ public class ThemesController(ApplicationDbContext db) : Controller
     [Route("~/Themes")]
     public IActionResult Index() => View();
 
+    [AllowAnonymous]
+    [HttpGet("list")]
+    public async Task<IActionResult> List()
+    {
+        var themes = await db.Themes
+            .AsNoTracking()
+            .Where(theme => theme.DeletedAt == null)
+            .OrderBy(theme => theme.Key)
+            .Select(theme => new
+            {
+                theme.Id,
+                theme.Key,
+                theme.DisplayName,
+                theme.LightBg,
+                theme.LightBorder,
+                theme.LightText,
+                theme.DarkBg,
+                theme.DarkBorder,
+                theme.DarkText,
+            })
+            .ToListAsync();
+
+        return Ok(themes);
+    }
     [HttpGet("datatable")]
     public async Task<IActionResult> DataTable([FromQuery] string status = "active")
     {
