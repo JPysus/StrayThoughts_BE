@@ -2,13 +2,15 @@ using StrayThoughts_BE.Data;
 using Microsoft.EntityFrameworkCore;
 
 var builder = WebApplication.CreateBuilder(args);
+string corsPolicy = "StrayThoughtsCorsPolicy";
+string[] allowedOrigins = builder.Configuration.GetSection("Cors:AllowedOrigins").Get<string[]>() ?? [];
 
 builder.Services.AddControllersWithViews();
 builder.Services.AddDbContext<ApplicationDbContext>(options =>
     options.UseSqlServer(builder.Configuration.GetConnectionString("DefaultConnection")));
 
-builder.Services.AddAuthentication("ImpressionBoardCookie")
-    .AddCookie("ImpressionBoardCookie", options =>
+builder.Services.AddAuthentication("StrayThoughtsCookie")
+    .AddCookie("StrayThoughtsCookie", options =>
     {
         options.LoginPath = "/Account/Login";
         options.AccessDeniedPath = "/Account/AccessDenied";
@@ -16,6 +18,21 @@ builder.Services.AddAuthentication("ImpressionBoardCookie")
         options.SlidingExpiration = true;
     });
 
+builder.Services.AddCors(options =>
+{
+    options.AddPolicy(corsPolicy, policy =>
+    {
+        if (allowedOrigins.Length > 0)
+        {
+            policy.WithOrigins(allowedOrigins);//.AllowAnyHeader().AllowAnyMethod();
+        }
+    });
+});
+
+builder.Services.AddControllers().AddJsonOptions(options =>
+{
+    options.JsonSerializerOptions.ReferenceHandler = System.Text.Json.Serialization.ReferenceHandler.IgnoreCycles;
+});
 builder.Services.AddAuthorization();
 builder.Services.AddSwaggerGen();
 var app = builder.Build();
@@ -32,11 +49,13 @@ else
     app.UseSwagger();
     app.UseSwaggerUI(c =>
     {
-        c.SwaggerEndpoint("/swagger/v1/swagger.json", "ImpressionBoard v1");
+        c.SwaggerEndpoint("/swagger/v1/swagger.json", "StrayThoughts v1");
     });
 }
 app.UseHttpsRedirection();
 app.UseRouting();
+
+app.UseCors(corsPolicy);
 
 app.UseAuthentication();
 app.UseAuthorization();
