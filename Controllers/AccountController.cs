@@ -49,7 +49,7 @@ public class AccountController(IConfiguration configuration) : Controller
     [ValidateAntiForgeryToken]
     public async Task<IActionResult> Logout()
     {
-        await HttpContext.SignOutAsync("ImpressionBoardCookie");
+        await HttpContext.SignOutAsync("StrayThoughtsCookie");
         return RedirectToAction(nameof(Login));
     }
 
@@ -63,9 +63,9 @@ public class AccountController(IConfiguration configuration) : Controller
             new Claim(ClaimTypes.Name, name),
             new Claim(ClaimTypes.Role, role)
         };
-        var identity = new ClaimsIdentity(claims, "ImpressionBoardCookie");
+        var identity = new ClaimsIdentity(claims, "StrayThoughtsCookie");
         await HttpContext.SignInAsync(
-            "ImpressionBoardCookie",
+            "StrayThoughtsCookie",
             new ClaimsPrincipal(identity),
             new AuthenticationProperties { IsPersistent = isPersistent });
     }
